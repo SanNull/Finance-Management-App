@@ -1,13 +1,14 @@
-import { JournalEntryItem } from "@/interfaces/journal-entry-item";
-import { useState } from "react";
+import { IJournalEntry } from "@/backend/interfaces/IJournalEntry";
+import { useDatabaseOperations } from "@/backend/useDatabaseOperations";
+import { useEffect, useState } from "react";
 import {
-    Button,
-    Dimensions,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-    VirtualizedList,
+  Button,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  VirtualizedList,
 } from "react-native";
 
 export function JournalEntry() {
@@ -16,20 +17,35 @@ export function JournalEntry() {
   const [description, setDescription] = useState("");
   const [isIncome, setIsIncome] = useState(false);
 
-  const [list, setList] = useState<Array<JournalEntryItem>>([]);
+  const [list, setList] = useState<IJournalEntry[]>([]);
+
+  const updateList = async () => {
+    try {
+      const newList = await databaseOperations.gatherEntries();
+      setList(newList);
+      list.forEach((element) => {
+        console.log(element.key);
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    updateList();
+  }, [bttnPressed]);
 
   const addEntry = () => {
     setBttn(true);
   };
 
-  const conffirmEntry = () => {
-    let input: JournalEntryItem = {
-      key: list.length + 1,
+  const conffirmEntry = async () => {
+    let input: Omit<IJournalEntry, "key"> = {
       value: Number(value),
       description: description,
       isIncome: isIncome,
     };
-    setList([...list, input]);
+    await databaseOperations.insertEntry(input);
     setBttn(false);
   };
 
@@ -37,13 +53,14 @@ export function JournalEntry() {
     setIsIncome(!isIncome);
   };
 
-  const getItem = (_data: unknown, index: number): JournalEntryItem =>
-    list[index];
+  const getItem = (_data: unknown, index: number): IJournalEntry => list[index];
+
+  const databaseOperations = useDatabaseOperations();
 
   return (
     <View style={styles.container}>
       <VirtualizedList
-        renderItem={({ item }: { item: JournalEntryItem }) => (
+        renderItem={({ item }: { item: IJournalEntry }) => (
           <Text>
             {item.description}
             {item.isIncome ? " Entrada " : " Saída "} {item.value}
@@ -79,6 +96,12 @@ export function JournalEntry() {
       )}
       <View style={styles.button}>
         <Button title="Adicionar Entrada" onPress={addEntry}></Button>
+        <Button
+          title="Remover Tabela"
+          onPress={() => {
+            databaseOperations.deleteEntryDatabase();
+          }}
+        ></Button>
       </View>
     </View>
   );
