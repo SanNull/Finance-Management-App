@@ -1,105 +1,70 @@
-import { IJournalEntry } from "@/backend/interfaces/IJournalEntry";
-import { useDatabaseOperations } from "@/backend/useDatabaseOperations";
+import { useDatabaseOperations } from "@/data/useDatabaseOperations";
+import { IJournalEntry } from "@/model/interfaces/IJournalEntry";
+import { useJournalEntryOpertations } from "@/model/useJournalEntryOperations";
 import { useEffect, useState } from "react";
 import {
   Button,
   Dimensions,
   StyleSheet,
   Text,
-  TextInput,
   View,
   VirtualizedList,
 } from "react-native";
+import { JournalForm } from "./journal-form";
 
 export function JournalEntry() {
-  const [bttnPressed, setBttn] = useState(false);
-  const [value, setValue] = useState("");
-  const [description, setDescription] = useState("");
-  const [isIncome, setIsIncome] = useState(false);
-
+  const [bttnPressed, setButton] = useState(false);
+  const [isIncome, setIncome] = useState(false);
   const [list, setList] = useState<IJournalEntry[]>([]);
+  const journalEntryOperations = useJournalEntryOpertations();
 
-  const updateList = async () => {
-    try {
-      const newList = await databaseOperations.gatherEntries();
-      setList(newList);
-      list.forEach((element) => {
-        console.log(element.key);
-      });
-    } catch (error) {
-      console.log(error);
-    }
+  const DEBUGDB = useDatabaseOperations();
+
+  const onConfirm = (entry: Omit<IJournalEntry, "key">) => {
+    setButton(false);
+    journalEntryOperations.addEntry(entry);
   };
 
   useEffect(() => {
-    updateList();
+    getEntries();
   }, [bttnPressed]);
 
-  const addEntry = () => {
-    setBttn(true);
-  };
-
-  const conffirmEntry = async () => {
-    let input: Omit<IJournalEntry, "key"> = {
-      value: Number(value),
-      description: description,
-      isIncome: isIncome,
-    };
-    await databaseOperations.insertEntry(input);
-    setBttn(false);
-  };
-
-  const toggleIncome = () => {
-    setIsIncome(!isIncome);
+  const getEntries = async () => {
+    setList(await journalEntryOperations.getEntryList());
   };
 
   const getItem = (_data: unknown, index: number): IJournalEntry => list[index];
 
-  const databaseOperations = useDatabaseOperations();
-
   return (
     <View style={styles.container}>
       <VirtualizedList
+        style={styles.entryList}
         renderItem={({ item }: { item: IJournalEntry }) => (
           <Text>
-            {item.description}
-            {item.isIncome ? " Entrada " : " Saída "} {item.value}
+            {item.date} {item.value} {item.description}{" "}
+            {item.isIncome ? " Entrada " : " Saída "}
+            {item.account}
+            {item.tags}
           </Text>
         )}
         keyExtractor={(item) => String(item.key)}
         getItemCount={() => list.length}
         getItem={getItem}
       ></VirtualizedList>
-      {bttnPressed ? (
-        <View style={styles.entry}>
-          <TextInput
-            onChangeText={setValue}
-            value={value}
-            keyboardType="numeric"
-            placeholder="1000"
-          ></TextInput>
-          <TextInput
-            onChangeText={setDescription}
-            value={description}
-            placeholder="Compras no mercado"
-          ></TextInput>
-          <Button
-            title={isIncome ? "Entrada" : "Saída"}
-            onPress={toggleIncome}
-          ></Button>
-          <View style={styles.button}>
-            <Button title="Adicionar" onPress={conffirmEntry}></Button>
-          </View>
-        </View>
-      ) : (
-        <View />
-      )}
+      <JournalForm
+        formVisible={bttnPressed}
+        isIncome={isIncome}
+        onConfirm={onConfirm}
+      />
       <View style={styles.button}>
-        <Button title="Adicionar Entrada" onPress={addEntry}></Button>
+        <Button
+          title="Adicionar Entrada"
+          onPress={() => setButton(true)}
+        ></Button>
         <Button
           title="Remover Tabela"
           onPress={() => {
-            databaseOperations.deleteEntryDatabase();
+            DEBUGDB.deleteEntryDatabase();
           }}
         ></Button>
       </View>
@@ -119,5 +84,11 @@ const styles = StyleSheet.create({
   },
   entry: {
     height: Dimensions.get("window").height / 2,
+  },
+  entryList: {
+    width: "100%",
+    //paddingHorizontal: "25%",
+    borderRadius: 5,
+    paddingVertical: "25%",
   },
 });

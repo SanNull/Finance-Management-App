@@ -1,5 +1,5 @@
+import { IJournalEntry } from "@/model/interfaces/IJournalEntry";
 import * as SQLite from "expo-sqlite";
-import { IJournalEntry } from "./interfaces/IJournalEntry";
 
 export function useDatabaseOperations() {
   const db = SQLite.useSQLiteContext();
@@ -10,15 +10,14 @@ export function useDatabaseOperations() {
 
     try {
       const result = await statement.executeAsync({
-        $date: entry.date.getDate().toLocaleString(),
+        $date: entry.date,
         $description: entry.description,
-        $value: entry.value,
+        $value: Number(entry.value),
         $tags: entry.tags.toString(),
         $account: entry.account,
         $isIncome: Number(entry.isIncome),
       });
 
-      alert(result.lastInsertRowId);
       console.log(result.lastInsertRowId);
     } catch (error) {
       throw error;

@@ -1,8 +1,8 @@
 export interface IJournalEntry {
   key: number;
-  date: Date;
+  date: string;
   description: string;
-  value: number;
+  value: string;
   tags: string[];
   account: string;
   isIncome: boolean;

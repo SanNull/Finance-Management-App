@@ -1,4 +1,4 @@
-import { initDatabase } from "@/backend/EntriesDatabase";
+import { initDatabase } from "@/data/EntriesDatabase";
 import { Slot } from "expo-router";
 import { SQLiteProvider } from "expo-sqlite";
 
